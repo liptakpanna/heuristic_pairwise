@@ -4,7 +4,7 @@ CREATE TABLE alignments_help(
   score integer,
   time integer,
 
-  constraint primary key (id1,id2)
+  constraint ah_pk primary key (id1,id2)
 );
 
 CREATE TABLE alignments_help_affine(
@@ -13,5 +13,5 @@ CREATE TABLE alignments_help_affine(
   score integer,
   time integer,
 
-  constraint primary key (id1,id2)
+  constraint ahf_pk primary key (id1,id2)
 );
