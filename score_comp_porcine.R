@@ -175,5 +175,5 @@ score_match <- 1
 score_mismatch <- -1
 score_gap <- -2
 
-getneedle(1,4,score_match,score_mismatch,score_gap)
+print(getneedle(1,4,score_match,score_mismatch,score_gap))
 #measure_overall_used(1, length(x[1,]), 300, 5, db, score_match, score_mismatch, score_gap, 1, TRUE)
