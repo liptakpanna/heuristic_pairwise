@@ -33,7 +33,7 @@ getlookup_simple_affine <- function(id1, id2, score_match, score_mismatch, score
 get_needle_affine <- function(id1, id2, score_match, score_mismatch, score_gap_open, score_gap_extend){
   res <- dbGetQuery(con, paste("select score, time from alignments_help_affine where (id1 =", id1, " and id2=", id2, ") or (id2 =",id1, "and id1 =",id2, ");"));
   if(length(res) > 0){
-      return list(score=res$score, time=res$time)
+      return(list(score=res$score, time=res$time))
   }
   
   start <- proc.time()
@@ -45,7 +45,7 @@ get_needle_affine <- function(id1, id2, score_match, score_mismatch, score_gap_o
   end <- proc.time()
   
   t = (end-start)[["elapsed"]]
-  
+
   dbSendQuery(con, paste("insert into alignments_help_affine values (",id1, ",", id2, ",", score$score, "," t,");"))
   
   return(list(score=score$score, time=t))
