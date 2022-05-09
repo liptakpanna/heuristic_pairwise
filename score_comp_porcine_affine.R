@@ -44,9 +44,9 @@ get_needle_affine <- function(id1, id2, score_match, score_mismatch, score_gap_o
   )
   end <- proc.time()
   
-  t = (end-start)[["elapsed"]]
+  t <- (end-start)[["elapsed"]]
 
-  dbSendQuery(con, paste("insert into alignments_help_affine values (",id1, ",", id2, ",", score$score, "," t,");"))
+  dbSendQuery(con, paste("insert into alignments_help_affine values (",id1, ",", id2, ",", score$score, ",", t,");"))
   
   return(list(score=score$score, time=t))
 }
