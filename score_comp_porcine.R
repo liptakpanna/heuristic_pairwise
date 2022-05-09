@@ -155,7 +155,7 @@ measure_overall_used <- function(count, limit, k, sample_size,  upperlimit,
       df <- df %>% 
         mutate(across(where(is.numeric), round, 3))
       write.table( df,  
-                   file="/home/panna/Projects/thesis/pairwise/meresek_covid.csv", 
+                   file="home/pannaliptak/monetdb/thesis/code/meresek_porcine.csv", 
                    append = T, 
                    sep=',', 
                    row.names=F, 
@@ -179,4 +179,4 @@ score_match <- 1
 score_mismatch <- -1
 score_gap <- -2
 
-measure_overall_used(1, length(x[1,]), 1000, 5, db, score_match, score_mismatch, score_gap, 1, TRUE)
+measure_overall_used(1, length(x[1,]), 300, 5, db, score_match, score_mismatch, score_gap, 1, TRUE)
