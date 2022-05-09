@@ -32,7 +32,7 @@ getlookup_simple <- function(id1, id2, score_match, score_mismatch, score_gap){
 
 getneedle <- function(id1, id2, score_match, score_mismatch, score_gap){
   res <- dbGetQuery(con, paste("select score, time from alignments_help where (id1 =", id1, " and id2=", id2,") or (id2 =",id1, "and id1 =",id2, ");"));
-  if(length(res) > 0 and res$time > 0){
+  if(length(res) > 0 && res$time > 0){
       return(list(score=res$score, time=res$time))
   }
   
