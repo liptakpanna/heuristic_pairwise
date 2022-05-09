@@ -1,0 +1,180 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(DBI)
+library(MonetDB.R)
+
+print(paste(Sys.time(), "started...", sep = " "))
+
+con <- dbConnect(MonetDB.R(), 
+                 host="localhost", 
+                 dbname="thesis", 
+                 port="50000",
+                 user="monetdb", 
+                 password="monetdb")
+```
+
+
+```{sql connection=con}
+truncate seq_data;
+drop table seq_data cascade;
+```
+
+```{sql connection=con}
+copy into seq_data(seq) from R'C:\Users\lipta\Documents\Projektek\thesis\pairwise\rseq.txt'(seq);
+```
+
+```{sql connection=con}
+copy into seq_data(seq) from '/home/panna/Projects/thesis/rose_examples/sim_seq_500.txt'(seq);
+```
+
+```{sql connection=con}
+select * from seq_data limit 3 ;
+```
+
+```{sql connection=con}
+select * from seq_data where seq = 'TTGGAGTCTCTCCATAATAGTTTACCGTGCCGTACGCCACTTTAAGTCTGGGGTCGTACCATAAGTCCCAGCATCGATCCTTGTGCGCAGTATGCTCTCG';
+```
+
+```{sql connection=con}
+select * from needleman((select id, seq, 1, -1, -2 from seq_data where id < 10));
+```
+
+
+```{sql connection=con}
+--SCORE MATCH, MISMATCH, GAP, K-mer, sample size, upperlimit
+call update_lookup(1,-1,-2,7,5, 100);
+```
+
+```{sql connection=con}
+--drop procedure update_lookup;
+select * from seq_data
+```
+
+
+```{sql connection=con}
+with example as (
+  select seq from seq_data where id = 1
+), tmp as (
+  select e.seq original, s.id subid, s.seq sub, charindex(s.seq, e.seq) as ind from example e cross join aligned_subseq s
+)
+select * from tmp where ind > 0;
+```
+
+```{sql connection=con}
+select * from get_subids(1)
+```
+
+```{sql connection=con}
+select * from get_common_subaligns(1,2)
+```
+
+```{sql connection=con}
+select * from aligned_subseq
+```
+
+
+```{sql connection=con}
+--SCORE MATCH, MISMATCH, GAP,  K-mer, samplesize, max
+call update_lookup(1,-1,-2,7,10,100);
+```
+
+```{sql connection=con}
+ select * from sample_seq;
+```
+
+```{sql connection=con}
+-- id1, id2, scorematch, gap, mismatch
+select use_lookup(11,14,1,-2,-1);
+```
+
+
+```{sql connection=con}
+select * from needleman((select id, seq, 1, -1, -2 from seq_data where id in (1,2)));
+```
+
+```{sql connection=con}
+select concat(concat(align1,align2),score) from needleman((select id, seq, 1, -1, -2 from seq_data where id in (120,127)));
+```
+
+```{sql connection=con}
+--drop table lookup cascade;
+select count(*) from aligned_subseq;
+```
+
+```{sql connection=con}
+select * from lookup;
+```
+
+```{sql connection=con}
+select * from get_subids(56);
+```
+
+```{sql connection=con}
+select * from get_common_subaligns(18,56);
+```
+
+```{sql connection=con}
+CREATE or replace function test_lookup(n int)
+returns text
+BEGIN
+    DECLARE count int, t text, start timestamp;
+    SET count = 0;
+    SET start = now();
+    WHILE (count < n) DO
+        call update_lookup(1,-2,-1,5);
+        
+        select use_lookup(id1, id2, 1, -2, -1) into text from (
+        select distinct s.id id1, x.id id2 from seq_data s, seq_data x where s.id < x.id
+        ) as tmp;
+        
+        SET count = count + 1;
+    END WHILE;
+    return convert(now() - start, text);
+END;
+```
+
+```{sql connection=con}
+        select use_lookup(id1, id2, 1, -2, -1) from (
+        select distinct s.id id1, x.id id2 from seq_data s, seq_data x where s.id < x.id
+        ) as tmp;
+```
+
+```{sql connection=con}
+        select * from seq_data;
+```
+
+```{sql connection=con}
+  select * from text_align('CAATATCGTCTCGAAAATAGATTCCCGTGCCGTGCATCACGAAAAGTCCGTGCTCAAATCATAAGTCCCAGCC#CTCATCCATCTCGGTAGTGCGCTATGG', 'CAACACTGCATCGTAATTAAAATGACGTGCTGTGCGTCACTATAGGACTGTGGCCTTACCACTAGACCCAGCCCTCATCCTTGTCGGCCGTACGCTCTGG', 1, -1, -2)
+```
+
+```{sql connection=con}
+  select * from text_align_affine('aga', 'aagga', 2, -1, -5, -1)
+```
+
+```{sql connection=con}
+-- match, mismatch, gap open, gap extend, sample size, upperlimit
+call update_lookup_affine(1,-1,-3, -1, 10, 10, 100);
+```
+
+```{sql connection=con}
+select seq from seq_data where id = 10;
+```
+
+```{sql connection=con}
+-- id1, id2, scorematch, gap, mismatch
+select use_lookup_simple_affine(11,14,1,-1,-3, -1);
+```
+
+```{sql connection=con}
+--match, mismatch, gap, threshold, samplesize, upperlimit
+call update_lookup2(1,-1,-2, 20, 2, 5);
+```
+
+```{sql connection=con}
+select count(*) from lookup;
+```
