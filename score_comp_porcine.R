@@ -32,7 +32,7 @@ getlookup_simple <- function(id1, id2, score_match, score_mismatch, score_gap){
 
 getneedle <- function(id1, id2, score_match, score_mismatch, score_gap){
   res <- dbGetQuery(con, paste("select score, time from alignments_help where (id1 =", id1, " and id2=", id2,") or (id2 =",id1, "and id1 =",id2, ");"));
-  if(length(res) > 0 && res$time > 0){
+  if(nrow(res) > 0){
       return(list(score=res$score, time=res$time))
   }
   
@@ -175,5 +175,4 @@ score_match <- 1
 score_mismatch <- -1
 score_gap <- -2
 
-print(getneedle(1,4,score_match,score_mismatch,score_gap))
-#measure_overall_used(1, length(x[1,]), 300, 5, db, score_match, score_mismatch, score_gap, 1, TRUE)
+measure_overall_used(1, length(x[1,]), 300, 5, db, score_match, score_mismatch, score_gap, 1, TRUE)

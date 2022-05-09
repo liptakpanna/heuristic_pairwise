@@ -32,7 +32,7 @@ getlookup_simple_affine <- function(id1, id2, score_match, score_mismatch, score
 
 get_needle_affine <- function(id1, id2, score_match, score_mismatch, score_gap_open, score_gap_extend){
   res <- dbGetQuery(con, paste("select score, time from alignments_help_affine where (id1 =", id1, " and id2=", id2, ") or (id2 =",id1, "and id1 =",id2, ");"));
-  if(length(res) > 0){
+  if(nrows(res) > 0){
       return(list(score=res$score, time=res$time))
   }
   
@@ -139,7 +139,7 @@ measure_overall_used_affine <- function(count, limit, k, sample_size,  upperlimi
       df <- df %>% 
         mutate(across(where(is.numeric), round, 3))
       write.table( df,  
-                   file="meresek_affine_porcine.csv", 
+                   file="home/pannaliptak/monetdb/thesis/code/meresek_porcine_affine.csv", 
                    append = T, 
                    sep=',', 
                    row.names=F, 
