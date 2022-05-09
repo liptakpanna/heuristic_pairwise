@@ -9,11 +9,11 @@ con <- dbConnect(MonetDB.R(),
                  user="monetdb", 
                  password="monetdb")
 
-getlookup_simple <- function(id1, id2, score_match, score_mismatch, score_gap){
+getlookup_simple_affine <- function(id1, id2, score_match, score_mismatch, score_gap_open, score_gap_extend){
   start <- proc.time()
   score <- dbGetQuery(con, paste(
-    "select use_lookup_simple( ", id1, "," , id2 ," ,", 
-    score_match,',', score_mismatch,',',score_gap,
+    "select use_lookup_simple_affine( ", id1, "," , id2 ," ,", 
+    score_match,',', score_mismatch,',',score_gap_open,',',score_gap_extend,
     ");", sep='')
   )
   end <- proc.time()
@@ -30,32 +30,21 @@ getlookup_simple <- function(id1, id2, score_match, score_mismatch, score_gap){
   return(result)
 }
 
-getneedle <- function(id1, id2, score_match, score_mismatch, score_gap){
+get_needle_affine <- function(id1, id2, score_match, score_mismatch, score_gap_open, score_gap_extend){
   start <- proc.time()
   score <- dbGetQuery(con, paste(
-    "select * from needleman((select id, seq,", 
-    score_match,',', score_mismatch,',',score_gap,
-    " from seq_data where id in ( ", id1, "," , id2 ,")));", sep='')
+    "select * from needleman_affine((select id, seq, ", 
+    score_match,',', score_mismatch,',',score_gap_open,',',score_gap_extend,"
+    from seq_data where id in ( ", id1, "," , id2 ,")));", sep='')
   )
   end <- proc.time()
-  
-  #print(score$align1)
-  #print(score$align2)
   
   result <- list(score=score$score, time=(end-start)[["elapsed"]])
   
   return(result)
 }
 
-#getneedle(3,210)
-getlookup_simple(3,20, 1, -1, -2)
-
-also <- 1
-db <- 100
-y <- c(also:(also+db-1))
-x <- combn(y, 2)
-
-measure_used_score <- function(felsohatar,score_match, score_mismatch, score_gap){
+measure_used_score_affine <- function(felsohatar, score_match, score_mismatch, score_gap_open, score_gap_extend){
   ossz <- 0
   identical <- 0
   ossztime_lookup <- 0
@@ -66,13 +55,12 @@ measure_used_score <- function(felsohatar,score_match, score_mismatch, score_gap
     t <- x[,i]
     id1 <- t[1]
     id2 <- t[2]
-    #print(paste(id1, ',', id2))
     
-    res1 <- getlookup_simple(id1,id2,score_match, score_mismatch, score_gap)
+    res1 <- getlookup_simple_affine(id1,id2, score_match, score_mismatch, score_gap_open, score_gap_extend)
     
     
     if(res1$used == TRUE){
-      res2 <- getneedle(id1,id2,score_match, score_mismatch, score_gap)
+      res2 <- get_needle_affine(id1,id2, score_match, score_mismatch, score_gap_open, score_gap_extend)
       
       score1 <- res1$score
       score2 <- res2$score
@@ -83,16 +71,12 @@ measure_used_score <- function(felsohatar,score_match, score_mismatch, score_gap
       
       ossztime_lookup = ossztime_lookup + res1$time
       ossztime_needle = ossztime_needle + res2$time
-      
-      #print(paste("RES1: ", score1, " RES2: ", score2, " elteres: ", (score2-score1), " negyzetes: ", (score2-score1)^2))
-      
+            
       if(score1 == score2){
         identical = identical + 1
       }
       
       ossz = ossz + (score2-score1)^2
-      
-      #ossz = ossz + score2-score1
       
       used = used + 1
     }
@@ -112,27 +96,20 @@ measure_used_score <- function(felsohatar,score_match, score_mismatch, score_gap
 
 library(dplyr)
 
-measure_overall_used <- function(count, limit, k, sample_size,  upperlimit, 
-                                 score_match, score_mismatch, score_gap, 
-                                 lookup=1, isLog=FALSE, div=100) {
+measure_overall_used_affine <- function(count, limit, k, sample_size,  upperlimit, 
+                                        score_match, score_mismatch, score_gap_open, score_gap_extend,
+                                        isLog=FALSE, div=100) {
   avgscore <- 0
   identical <- 0
   sumtime_lookup <- 0
   sumtime_needle <- 0
   sumused <- 0
   for(i in 1:count) {
-    print(paste("FUTTATÁS ", i, " ", Sys.time()))
-
-    if (lookup == 1){
-      dbSendQuery(con,paste("call update_lookup(",
-                            score_match,',', score_mismatch, ',',score_gap, ','
-                            , k, ',', sample_size,',', upperlimit, ");"))
-    }
-    else if (lookup == 2){
-      dbSendQuery(con,paste("call update_lookup2(1,-1,-2,", k, ',', sample_size,',', upperlimit, ");"))
-    }
+    print(paste("FUTTATÁS ", i, ", ", Sys.time()))
+    dbSendQuery(con,paste("call update_lookup_affine(", score_match,',', score_mismatch,',',score_gap_open,',',score_gap_extend,','
+                          , k, ',', sample_size,',', upperlimit, ");"))
     
-    result <- measure_used_score(limit, score_match, score_mismatch, score_gap)
+    result <- measure_used_score_affine(limit,score_match, score_mismatch, score_gap_open, score_gap_extend)
     avgscore = avgscore + result$avg
     identical = identical + result$identical
     sumtime_lookup = sumtime_lookup + result$time_lookup
@@ -151,11 +128,11 @@ measure_overall_used <- function(count, limit, k, sample_size,  upperlimit,
                        l_time=c(result$time_lookup/result$used),
                        t2=c(result$time_needle),
                        n_time=c(result$time_needle/result$used)
-                      )
+      )
       df <- df %>% 
         mutate(across(where(is.numeric), round, 3))
       write.table( df,  
-                   file="home/pannaliptak/monetdb/thesis/code/meresek_porcine.csv", 
+                   file="meresek_affine_porcine.csv", 
                    append = T, 
                    sep=',', 
                    row.names=F, 
@@ -174,9 +151,9 @@ also <- 1
 db <- 100
 y <- c(also:(also+db-1))
 x <- combn(y, 2)
-
 score_match <- 1
 score_mismatch <- -1
-score_gap <- -2
+score_gap_open <- -3
+score_gap_extend <- -1
 
-measure_overall_used(1, length(x[1,]), 300, 5, db, score_match, score_mismatch, score_gap, 1, TRUE)
+measure_overall_used_affine(1, length(x[1,]), 300, 5, db, score_match, score_mismatch, score_gap_open, score_gap_extend, TRUE)
