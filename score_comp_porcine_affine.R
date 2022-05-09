@@ -31,6 +31,11 @@ getlookup_simple_affine <- function(id1, id2, score_match, score_mismatch, score
 }
 
 get_needle_affine <- function(id1, id2, score_match, score_mismatch, score_gap_open, score_gap_extend){
+  res <- dbGetQuery(con, paste("select score, time from alignments_help_affine where (id1 =", id1, " and id2=", id2, ") or (id2 =",id1, "and id1 =",id2, ");"));
+  if(length(res) > 0){
+      return list(score=res$score, time=res$time)
+  }
+  
   start <- proc.time()
   score <- dbGetQuery(con, paste(
     "select * from needleman_affine((select id, seq, ", 
@@ -39,9 +44,11 @@ get_needle_affine <- function(id1, id2, score_match, score_mismatch, score_gap_o
   )
   end <- proc.time()
   
-  result <- list(score=score$score, time=(end-start)[["elapsed"]])
+  t = (end-start)[["elapsed"]]
   
-  return(result)
+  dbSendQuery(con, paste("insert into alignments_help_affine values (",id1, ",", id2, ",", score$score, "," t,");"))
+  
+  return(list(score=score$score, time=t))
 }
 
 measure_used_score_affine <- function(felsohatar, score_match, score_mismatch, score_gap_open, score_gap_extend){

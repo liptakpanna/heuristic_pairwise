@@ -31,6 +31,11 @@ getlookup_simple <- function(id1, id2, score_match, score_mismatch, score_gap){
 }
 
 getneedle <- function(id1, id2, score_match, score_mismatch, score_gap){
+  res <- dbGetQuery(con, paste("select score, time from alignments_help where id1 =", id1, " and id2=", id2,") or (id2 =",id1, "and id1 =",id2, ");"));
+  if(length(res) > 0){
+      return list(score=res$score, time=res$time)
+  }
+  
   start <- proc.time()
   score <- dbGetQuery(con, paste(
     "select * from needleman((select id, seq,", 
@@ -39,21 +44,12 @@ getneedle <- function(id1, id2, score_match, score_mismatch, score_gap){
   )
   end <- proc.time()
   
-  #print(score$align1)
-  #print(score$align2)
+  t = (end-start)[["elapsed"]]
   
-  result <- list(score=score$score, time=(end-start)[["elapsed"]])
+  dbSendQuery(con, paste("insert into alignments_help values (",id1, ",", id2, ",", score$score, "," t,");"))
   
-  return(result)
+  return(list(score=score$score, time=t))
 }
-
-#getneedle(3,210)
-getlookup_simple(3,20, 1, -1, -2)
-
-also <- 1
-db <- 100
-y <- c(also:(also+db-1))
-x <- combn(y, 2)
 
 measure_used_score <- function(felsohatar,score_match, score_mismatch, score_gap){
   ossz <- 0
