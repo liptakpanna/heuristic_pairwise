@@ -258,10 +258,10 @@ from collections import deque
 import datetime
 import math
 
-isLogging = False
+isLogging = True
 
 if isLogging:
-  log = open(r"/home/panna/Projects/thesis/pairwise/monet_affine.log", 'a')
+  log = open(r"/home/pannaliptak/monetdb/thesis/code/monet_affine.log", 'a')
   log.write("\nSTARTING ALIGNMENT.. " + str(datetime.datetime.now()) + '\n')
 
 def align(x,y):  
