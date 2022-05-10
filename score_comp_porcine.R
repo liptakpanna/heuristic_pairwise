@@ -116,17 +116,18 @@ measure_overall_used <- function(count, limit, k, sample_size,  upperlimit,
   sumtime_lookup <- 0
   sumtime_needle <- 0
   sumused <- 0
+  t <- 0
   for(i in 1:count) {
     print(paste("FUTTATÁS ", i, " ", Sys.time()))
 
-    if (lookup == 1){
-      dbSendQuery(con,paste("call update_lookup(",
+    start <- proc.time()
+
+    dbSendQuery(con,paste("call update_lookup(",
                             score_match,',', score_mismatch, ',',score_gap, ','
                             , k, ',', sample_size,',', upperlimit, ");"))
-    }
-    else if (lookup == 2){
-      dbSendQuery(con,paste("call update_lookup2(1,-1,-2,", k, ',', sample_size,',', upperlimit, ");"))
-    }
+
+    end <- proc.time()
+    t = t + (end-start)[["elapsed"]]
     
     result <- measure_used_score(limit, score_match, score_mismatch, score_gap)
     avgscore = avgscore + result$avg
@@ -151,7 +152,7 @@ measure_overall_used <- function(count, limit, k, sample_size,  upperlimit,
       df <- df %>% 
         mutate(across(where(is.numeric), round, 3))
       write.table( df,  
-                   file="home/pannaliptak/monetdb/thesis/code/meresek_porcine.csv", 
+                   file="/home/pannaliptak/monetdb/thesis/code/meresek_porcine.csv", 
                    append = T, 
                    sep=',', 
                    row.names=F, 
@@ -164,6 +165,7 @@ measure_overall_used <- function(count, limit, k, sample_size,  upperlimit,
   print(paste("ATLAG OSSZ LOOKUP TIME: ", sumtime_lookup/count))
   print(paste("ATLAG OSSZ NEEDLE TIME: ", sumtime_needle/count))
   print(paste("ATLAG USED LOOKUP: ", sumused/count))
+  print(paste("ATLAG LOOKUP TIME: ", t/count))
 }
 
 also <- 1
