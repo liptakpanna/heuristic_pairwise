@@ -49,11 +49,11 @@ id1, id2: valid sequence ids from the seq_data table
 
 - For fix gap penalty:
 
-SELECT use_lookup(id1, id2, score_match, score_mismatch, score_gap);
+  SELECT use_lookup(id1, id2, score_match, score_mismatch, score_gap);
 
 - For affine gap penalty:
 
-SELECT use_lookup_affine(id1, id2, score_match, score_mismatch, score_gap_open, score_gap_extend);
+  SELECT use_lookup_affine(id1, id2, score_match, score_mismatch, score_gap_open, score_gap_extend);
 
 The above functions return the two aligned string and the score of the alignment.
 
