@@ -258,7 +258,7 @@ from collections import deque
 import datetime
 import math
 
-isLogging = True
+isLogging = False
 
 if isLogging:
   log = open(r"/home/pannaliptak/monetdb/thesis/code/monet_affine.log", 'a')
