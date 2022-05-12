@@ -213,7 +213,7 @@ returns table(align1 text, align2 text, score integer) language python {
   result['score'] = score
   
   return result
-}
+};
 
 create or replace function create_lookup_affine(align1 text, align2 text, score_match integer, score_mismatch integer, score_gap_open integer, score_gap_extend integer, k integer) 
 returns table(align1 text, align2 text, score integer) language python {
@@ -478,7 +478,7 @@ except Exception as e:
   return 'ERROR see log'
 };
 
-create or replace function use_lookup_affine(id1 integer, id2 integer, score_match integer, score_mismatch integer, score_gap integer)
+create or replace function use_lookup_affine(id1 integer, id2 integer, score_match integer, score_mismatch integer, score_gap_open integer, score_gap_extend integer )
 returns text
 begin
   declare result text, seq1 text, seq2 text;
