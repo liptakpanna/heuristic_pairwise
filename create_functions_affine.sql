@@ -1,160 +1,81 @@
 create or replace function needleman_affine(ids integer, sequences text, score_match integer, score_mismatch integer, score_gap_open integer, score_gap_extend integer) 
 returns table(id1 integer, id2 integer, align1 text, align2 text, score integer) language python {
-    from itertools import product
-    import itertools
-    from collections import deque
-    import math
-    
-    id1, id2, align1, align2, score = [], [], [], [], []
+  from itertools import product
+  import itertools
+  from collections import deque
+  import math
+  
+  id1, id2, align1, align2, score = [], [], [], [], []
 
-    score_match, score_mismatch, score_gap_open, score_gap_extend = score_match[0], score_mismatch[0], score_gap_open[0], score_gap_extend[0]
-    
-    for (p,x), (q,y) in list(itertools.combinations(enumerate(sequences), 2)):
-      N, M = len(x), len(y)
-      
-      s = lambda a, b: score_match if a==b else score_mismatch
-
-      DIAG = -1, -1
-      LEFT = -1, 0
-      UP = 0, -1
-      
-      # Create tables F, X, Y, V and Ptr
-      F, X, Y, V = {}, {}, {}, {}
-      Ptr = {}
-      
-      F[-1, -1], X[-1,-1], Y[-1,-1], V[-1,-1] = 0, score_gap_open + score_gap_extend, score_gap_open + score_gap_extend, 0
-      for i in range(N):
-        F[i, -1] = -math.inf
-        X[i, -1] = score_gap_open + (i+1) * score_gap_extend
-        Y[i, -1] = -math.inf
-        V[i, -1] = score_gap_open + (i+1) * score_gap_extend
-      for j in range(M):
-        F[-1, j] = -math.inf
-        X[-1, j] = -math.inf
-        Y[-1, j] = score_gap_open + (j+1) * score_gap_extend
-        V[-1, j] = score_gap_open + (j+1) * score_gap_extend
-        
-      
-      option_Ptr = DIAG, LEFT, UP
-      for i, j in product(range(N), range(M)):
-        F[i, j] = V[i - 1, j - 1] + s(x[i], y[j])
-        
-        X[i,j] = max(F[i-1,j] + score_gap_open + score_gap_extend, X[i-1,j] + score_gap_extend)
-        Y[i,j] = max(F[i,j-1] + score_gap_open + score_gap_extend, Y[i,j-1] + score_gap_extend)
-        
-        option_V = (F[i, j], X[i, j], Y[i, j])
-        V[i, j], Ptr[i, j] = max(zip(option_V, option_Ptr), key = lambda k: k[0])
-       
-      # Work backwards from (N - 1, M - 1) to (0, 0)
-      # to find the best alignment.
-      alignment = deque()
-      i, j = N - 1, M - 1
-      while i >= 0 and j >= 0:
-        direction = Ptr[i, j]
-        if direction == DIAG:
-            element = i, j
-        elif direction == LEFT:
-            element = i, None
-        elif direction == UP:
-            element = None, j
-        alignment.appendleft(element)
-        di, dj = direction
-        i, j = i + di, j + dj
-      while i >= 0:
-        alignment.appendleft((i, None))
-        i -= 1
-      while j >= 0:
-        alignment.appendleft((None, j))
-        j -= 1
-      
-      first = "".join(
-        "-" if i is None else x[i] for i, _ in alignment
-      )
-      second = "".join(
-        "-" if j is None else y[j] for _, j in alignment
-      )
-      
-      curr_score = V[N-1, M-1]
-              
-      id1.append(ids[p])
-      id2.append(ids[q])
-      align1.append(first)
-      align2.append(second)
-      score.append(curr_score)
-      
-    
-    result = dict()
-    result['id1'] = id1
-    result['id2'] = id2
-    result['align1'] = align1
-    result['align2'] = align2
-    result['score'] = score
-    
-    return result
-};
-
-create or replace function text_align_affine(seq1 text, seq2 text, score_match integer, score_mismatch integer, score_gap_open integer, score_gap_extend integer) 
-returns table(align1 text, align2 text, score integer) language python {
-    from itertools import product
-    import itertools
-    from collections import deque
-    import math
-    
-    align1, align2, score = [], [], []
-
-    x, y = seq1, seq2
+  score_match, score_mismatch, score_gap_open, score_gap_extend = score_match[0], score_mismatch[0], score_gap_open[0], score_gap_extend[0]
+  
+  for (p,x), (q,y) in list(itertools.combinations(enumerate(sequences), 2)):
     N, M = len(x), len(y)
-
-    score_match, score_mismatch, score_gap_open, score_gap_extend = score_match, score_mismatch, score_gap_open, score_gap_extend
-      
+    
     s = lambda a, b: score_match if a==b else score_mismatch
 
     DIAG = -1, -1
-    LEFT = -1, 0
-    UP = 0, -1
+    UP = -1, 0
+    LEFT = 0, -1
     
-    # Create tables F, X, Y, V and Ptr
-    F, X, Y, V = {}, {}, {}, {}
-    Ptr = {}
+    # Create tables F, X, Y and Ptr
+    F, X, Y = {}, {}, {}
+    PtrF, PtrX, PtrY = {}, {}, {}
     
-    F[-1, -1], X[-1,-1], Y[-1,-1], V[-1,-1] = 0, score_gap_open + score_gap_extend, score_gap_open + score_gap_extend, 0
+    F[-1, -1], X[-1,-1], Y[-1,-1] = 0, -math.inf, -math.inf
     for i in range(N):
       F[i, -1] = -math.inf
       X[i, -1] = score_gap_open + (i+1) * score_gap_extend
       Y[i, -1] = -math.inf
-      V[i, -1] = score_gap_open + (i+1) * score_gap_extend
     for j in range(M):
       F[-1, j] = -math.inf
       X[-1, j] = -math.inf
       Y[-1, j] = score_gap_open + (j+1) * score_gap_extend
-      V[-1, j] = score_gap_open + (j+1) * score_gap_extend
       
-    
-    option_Ptr = DIAG, LEFT, UP
     for i, j in product(range(N), range(M)):
-      F[i, j] = V[i - 1, j - 1] + s(x[i], y[j])
+      Y[i, j], PtrY[i, j] = max(zip((F[i,j-1] + score_gap_open + score_gap_extend, Y[i,j-1] + score_gap_extend), ('F','Y')), 
+        key = lambda k: k[0])
+        
+      X[i, j], PtrX[i, j] = max(zip((F[i-1,j] + score_gap_open + score_gap_extend, X[i-1,j] + score_gap_extend), ('F','X')), 
+        key = lambda k: k[0])
+        
+      F[i, j], PtrF[i, j] = max(zip((F[i - 1, j - 1] + s(x[i], y[j]), X[i, j], Y[i, j]), ('F','X','Y')), key = lambda k: k[0])
       
-      X[i,j] = max(F[i-1,j] + score_gap_open + score_gap_extend, X[i-1,j] + score_gap_extend)
-      Y[i,j] = max(F[i,j-1] + score_gap_open + score_gap_extend, Y[i,j-1] + score_gap_extend)
-      
-      option_V = (F[i, j], X[i, j], Y[i, j])
-      V[i, j], Ptr[i, j] = max(zip(option_V, option_Ptr), key = lambda k: k[0])
-     
     # Work backwards from (N - 1, M - 1) to (0, 0)
     # to find the best alignment.
     alignment = deque()
     i, j = N - 1, M - 1
+    curr_m = 'F'
+
     while i >= 0 and j >= 0:
-      direction = Ptr[i, j]
+      if curr_m == 'X':
+        direction = UP
+        curr_m = PtrX[i,j]
+      elif curr_m == 'Y':
+        direction = LEFT
+        curr_m = PtrY[i,j]
+      else:
+        if PtrF[i,j] == 'X':
+          direction = UP
+          curr_m = PtrX[i,j]
+        elif PtrF[i,j] == 'Y':
+          direction = LEFT
+          curr_m = PtrY[i,j]
+        else:
+          direction = DIAG
+          curr_m = PtrF[i,j] 
+        
       if direction == DIAG:
           element = i, j
       elif direction == LEFT:
-          element = i, None
-      elif direction == UP:
           element = None, j
+      elif direction == UP:
+          element = i, None
+          
       alignment.appendleft(element)
       di, dj = direction
       i, j = i + di, j + dj
+
     while i >= 0:
       alignment.appendleft((i, None))
       i -= 1
@@ -169,20 +90,130 @@ returns table(align1 text, align2 text, score integer) language python {
       "-" if j is None else y[j] for _, j in alignment
     )
     
-    curr_score = V[N-1, M-1]
-            
+    curr_score = F[N - 1, M - 1]        
+    id1.append(ids[p])
+    id2.append(ids[q])
     align1.append(first)
     align2.append(second)
     score.append(curr_score)
-      
     
-    result = dict()
-    result['align1'] = align1
-    result['align2'] = align2
-    result['score'] = score
-    
-    return result
+  
+  result = dict()
+  result['id1'] = id1
+  result['id2'] = id2
+  result['align1'] = align1
+  result['align2'] = align2
+  result['score'] = score
+  
+  return result
 };
+
+create or replace function text_align_affine(seq1 text, seq2 text, score_match integer, score_mismatch integer, score_gap_open integer, score_gap_extend integer) 
+returns table(align1 text, align2 text, score integer) language python {
+  from itertools import product
+  import itertools
+  from collections import deque
+  import math
+  
+  align1, align2, score = [], [], []
+
+  x, y = seq1, seq2
+  N, M = len(x), len(y)
+
+  score_match, score_mismatch, score_gap_open, score_gap_extend = score_match, score_mismatch, score_gap_open, score_gap_extend
+    
+  s = lambda a, b: score_match if a==b else score_mismatch
+
+  DIAG = -1, -1
+  UP = -1, 0
+  LEFT = 0, -1
+  
+  # Create tables F, X, Y and Ptr
+  F, X, Y = {}, {}, {}
+  PtrF, PtrX, PtrY = {}, {}, {}
+  
+  F[-1, -1], X[-1,-1], Y[-1,-1] = 0, -math.inf, -math.inf
+  for i in range(N):
+    F[i, -1] = -math.inf
+    X[i, -1] = score_gap_open + (i+1) * score_gap_extend
+    Y[i, -1] = -math.inf
+  for j in range(M):
+    F[-1, j] = -math.inf
+    X[-1, j] = -math.inf
+    Y[-1, j] = score_gap_open + (j+1) * score_gap_extend
+
+  for i, j in product(range(N), range(M)):
+    Y[i, j], PtrY[i, j] = max(zip((F[i,j-1] + score_gap_open + score_gap_extend, Y[i,j-1] + score_gap_extend), ('F','Y')), 
+      key = lambda k: k[0])
+      
+    X[i, j], PtrX[i, j] = max(zip((F[i-1,j] + score_gap_open + score_gap_extend, X[i-1,j] + score_gap_extend), ('F','X')), 
+      key = lambda k: k[0])
+      
+    F[i, j], PtrF[i, j] = max(zip((F[i - 1, j - 1] + s(x[i], y[j]), X[i, j], Y[i, j]), ('F','X','Y')), key = lambda k: k[0])
+    
+  # Work backwards from (N - 1, M - 1) to (0, 0)
+  # to find the best alignment.
+  alignment = deque()
+  i, j = N - 1, M - 1
+  curr_m = 'F'
+
+  while i >= 0 and j >= 0:
+    if curr_m == 'X':
+      direction = UP
+      curr_m = PtrX[i,j]
+    elif curr_m == 'Y':
+      direction = LEFT
+      curr_m = PtrY[i,j]
+    else:
+      if PtrF[i,j] == 'X':
+        direction = UP
+        curr_m = PtrX[i,j]
+      elif PtrF[i,j] == 'Y':
+        direction = LEFT
+        curr_m = PtrY[i,j]
+      else:
+        direction = DIAG
+        curr_m = PtrF[i,j] 
+      
+    if direction == DIAG:
+        element = i, j
+    elif direction == LEFT:
+        element = None, j
+    elif direction == UP:
+        element = i, None
+        
+    alignment.appendleft(element)
+    di, dj = direction
+    i, j = i + di, j + dj
+
+  while i >= 0:
+    alignment.appendleft((i, None))
+    i -= 1
+  while j >= 0:
+    alignment.appendleft((None, j))
+    j -= 1
+  
+  first = "".join(
+    "-" if i is None else x[i] for i, _ in alignment
+  )
+  second = "".join(
+    "-" if j is None else y[j] for _, j in alignment
+  )
+  
+  curr_score = F[N - 1, M - 1]
+          
+  align1.append(first)
+  align2.append(second)
+  score.append(curr_score)
+    
+  
+  result = dict()
+  result['align1'] = align1
+  result['align2'] = align2
+  result['score'] = score
+  
+  return result
+}
 
 create or replace function create_lookup_affine(align1 text, align2 text, score_match integer, score_mismatch integer, score_gap_open integer, score_gap_extend integer, k integer) 
 returns table(align1 text, align2 text, score integer) language python {
@@ -261,88 +292,106 @@ import math
 isLogging = False
 
 if isLogging:
-  log = open(r"monet_affine.log", 'a')
+  log = open(r"/home/panna/Projects/thesis/pairwise/monet_affine.log", 'a')
   log.write("\nSTARTING ALIGNMENT.. " + str(datetime.datetime.now()) + '\n')
 
 def align(x,y):  
-    N, M = len(x), len(y)
-    
-    s = lambda a, b: score_match if a==b else score_mismatch
-
-    DIAG = -1, -1
-    LEFT = -1, 0
-    UP = 0, -1
-
-    # Create tables F and Ptr
-    F, X, Y, V = {}, {}, {}, {}
-    Ptr = {}
-
-    F[-1, -1], X[-1,-1], Y[-1,-1], V[-1,-1] = 0, score_gap_open, score_gap_open, 0
-    for i in range(N):
-      F[i, -1] = -math.inf
-      X[i, -1] = score_gap_open + (i+1) * score_gap_extend
-      Y[i, -1] = -math.inf
-      V[i, -1] = score_gap_open + (i+1) * score_gap_extend
-    for j in range(M):
-      F[-1, j] = -math.inf
-      X[-1, j] = -math.inf
-      Y[-1, j] = score_gap_open + (j+1) * score_gap_extend
-      V[-1, j] = score_gap_open + (j+1) * score_gap_extend
-      
-    
-    option_Ptr = DIAG, LEFT, UP
-    for i, j in product(range(N), range(M)):
-      F[i, j] = V[i - 1, j - 1] + s(x[i], y[j])
-      
-      X[i,j] = max(F[i-1,j] + score_gap_open, X[i-1,j] + score_gap_extend)
-      Y[i,j] = max(F[i,j-1] + score_gap_open, Y[i,j-1] + score_gap_extend)
-      
-      option_V = (F[i, j], X[i, j], Y[i, j])
-      V[i, j], Ptr[i, j] = max(zip(option_V, option_Ptr), key = lambda k: k[0])
-     
-    # Work backwards from (N - 1, M - 1) to (0, 0)
-    # to find the best alignment.
-    alignment = deque()
-    i, j = N - 1, M - 1
-    while i >= 0 and j >= 0:
-      direction = Ptr[i, j]
-      if direction == DIAG:
-          element = i, j
-      elif direction == LEFT:
-          element = i, None
-      elif direction == UP:
-          element = None, j
-      alignment.appendleft(element)
-      di, dj = direction
-      i, j = i + di, j + dj
-    while i >= 0:
-      alignment.appendleft((i, None))
-      i -= 1
-    while j >= 0:
-      alignment.appendleft((None, j))
-      j -= 1
-    
-    first = "".join(
-      "-" if i is None else x[i] for i, _ in alignment
-    )
-    second = "".join(
-      "-" if j is None else y[j] for _, j in alignment
-    )
-
-    curr_score = V[N-1, M-1]
+  N, M = len(x), len(y)
   
-    if isLogging:
-      log.write('SUBALIGNMENT: \n ' + first + '\n ' + second + '\n')
+  s = lambda a, b: score_match if a==b else score_mismatch
+
+  DIAG = -1, -1
+  UP = -1, 0
+  LEFT = 0, -1
+  
+  # Create tables F, X, Y and Ptr
+  F, X, Y = {}, {}, {}
+  PtrF, PtrX, PtrY = {}, {}, {}
+  
+  F[-1, -1], X[-1,-1], Y[-1,-1] = 0, -math.inf, -math.inf
+  for i in range(N):
+    F[i, -1] = -math.inf
+    X[i, -1] = score_gap_open + (i+1) * score_gap_extend
+    Y[i, -1] = -math.inf
+  for j in range(M):
+    F[-1, j] = -math.inf
+    X[-1, j] = -math.inf
+    Y[-1, j] = score_gap_open + (j+1) * score_gap_extend
+
+  for i, j in product(range(N), range(M)):
+    Y[i, j], PtrY[i, j] = max(zip((F[i,j-1] + score_gap_open + score_gap_extend, Y[i,j-1] + score_gap_extend), ('F','Y')), 
+      key = lambda k: k[0])
+      
+    X[i, j], PtrX[i, j] = max(zip((F[i-1,j] + score_gap_open + score_gap_extend, X[i-1,j] + score_gap_extend), ('F','X')), 
+      key = lambda k: k[0])
+      
+    F[i, j], PtrF[i, j] = max(zip((F[i - 1, j - 1] + s(x[i], y[j]), X[i, j], Y[i, j]), ('F','X','Y')), key = lambda k: k[0])
     
-    return first, second, curr_score
+  # Work backwards from (N - 1, M - 1) to (0, 0)
+  # to find the best alignment.
+  alignment = deque()
+  i, j = N - 1, M - 1
+  curr_m = 'F'
+
+  while i >= 0 and j >= 0:
+    if curr_m == 'X':
+      direction = UP
+      curr_m = PtrX[i,j]
+    elif curr_m == 'Y':
+      direction = LEFT
+      curr_m = PtrY[i,j]
+    else:
+      if PtrF[i,j] == 'X':
+        direction = UP
+        curr_m = PtrX[i,j]
+      elif PtrF[i,j] == 'Y':
+        direction = LEFT
+        curr_m = PtrY[i,j]
+      else:
+        direction = DIAG
+        curr_m = PtrF[i,j] 
+      
+    if direction == DIAG:
+        element = i, j
+    elif direction == LEFT:
+        element = None, j
+    elif direction == UP:
+        element = i, None
+        
+    alignment.appendleft(element)
+    di, dj = direction
+    i, j = i + di, j + dj
+
+  while i >= 0:
+    alignment.appendleft((i, None))
+    i -= 1
+  while j >= 0:
+    alignment.appendleft((None, j))
+    j -= 1
+  
+  first = "".join(
+    "-" if i is None else x[i] for i, _ in alignment
+  )
+  second = "".join(
+    "-" if j is None else y[j] for _, j in alignment
+  )
+  
+  curr_score = F[N - 1, M - 1]
+  
+  if(N == 0 or M == 0): curr_score = score_gap_open + score_gap_extend
+
+  if isLogging:
+    log.write('SUBALIGNMENT: \n ' + first + '\n ' + second + '\n')
+  
+  return first, second, curr_score
 
 def check_intersect(arr, ind, r):
-    summa = sum(arr[ind:ind+r])
-    if summa > 0:
-      return False
-    else:
-      arr[ind:ind+r] = [1] * r
-      return True
+  summa = sum(arr[ind:ind+r])
+  if summa > 0:
+    return False
+  else:
+    arr[ind:ind+r] = [1] * r
+    return True
 try:     
   seq1 = list(s1)
   seq2 = list(s2)
@@ -352,29 +401,29 @@ try:
 
 
   for i in range(len(ids)):
-      k = len(align1[i])
-      
-      if first[i] == 1:
-        curr_ind1, curr_ind2 = ind1[i]-1, ind2[i]-1 #IND WITH NO ZERO
-        curr_align1, curr_align2 = align1[i], align2[i]
-      else:
-        curr_ind1, curr_ind2 = ind1[i]-1, ind2[i]-1 #IND WITH NO ZERO
-        curr_align1, curr_align2 = align2[i], align1[i]
-      
-      curr_al_len1, curr_al_len2 = len(curr_align1.replace('-', '')), len(curr_align2.replace('-', ''))
+    k = len(align1[i])
+    
+    if first[i] == 1:
+      curr_ind1, curr_ind2 = ind1[i]-1, ind2[i]-1 #IND WITH NO ZERO
+      curr_align1, curr_align2 = align1[i], align2[i]
+    else:
+      curr_ind1, curr_ind2 = ind1[i]-1, ind2[i]-1 #IND WITH NO ZERO
+      curr_align1, curr_align2 = align2[i], align1[i]
+    
+    curr_al_len1, curr_al_len2 = len(curr_align1.replace('-', '')), len(curr_align2.replace('-', ''))
 
-      if check_intersect(used1, curr_ind1, curr_al_len1) and check_intersect(used2, curr_ind2, curr_al_len2):
-        if isLogging:
-          log.write('INSERTING: ' + curr_align1 + ', ' + curr_align2 + ' at ' + str(curr_ind1) + ', ' + str(curr_ind2) + '\n')
-  
-        seq1[curr_ind1] = '[' + curr_align1 + "#" + str(score[i]) + ']'
-        seq2[curr_ind2] = '[' + curr_align2 + ']'
-        
-        seq1[curr_ind1+1:curr_ind1+curr_al_len1] = ['_'] * (curr_al_len1-1)
-        seq2[curr_ind2+1:curr_ind2+curr_al_len2] = ['_'] * (curr_al_len2-1)
-            
-        if isLogging:
-          log.write('RESULT: \n ' + ''.join(seq1) + '\n ' + ''.join(seq2) + '\n')
+    if check_intersect(used1, curr_ind1, curr_al_len1) and check_intersect(used2, curr_ind2, curr_al_len2):
+      if isLogging:
+        log.write('INSERTING: ' + curr_align1 + ', ' + curr_align2 + ' at ' + str(curr_ind1) + ', ' + str(curr_ind2) + '\n')
+
+      seq1[curr_ind1] = '[' + curr_align1 + "#" + str(score[i]) + ']'
+      seq2[curr_ind2] = '[' + curr_align2 + ']'
+      
+      seq1[curr_ind1+1:curr_ind1+curr_al_len1] = ['_'] * (curr_al_len1-1)
+      seq2[curr_ind2+1:curr_ind2+curr_al_len2] = ['_'] * (curr_al_len2-1)
+          
+      if isLogging:
+        log.write('RESULT: \n ' + ''.join(seq1) + '\n ' + ''.join(seq2) + '\n')
   
   #remove used bases:
   seq1 = ''.join(seq1).replace('_','')
@@ -386,26 +435,26 @@ try:
   res1, res2, score = '', '', 0
   
   while '[' in seq1:
-      i1 = seq1.find('[') 
-      i2 = seq2.find('[')
-      j1 = seq1.find(']') 
-      j2 = seq2.find(']')
-      
-      if len(seq1[:i1]) > 0 or len(seq2[:i2]) > 0:
-        first, sec, currscore = align(seq1[:i1], seq2[:i2])
-      else:
-        first, sec, currscore = '', '', 0
-      
-      tmp = seq1[i1+1:j1].split("#")
-      
-      res1 += first + tmp[0]
-      res2 += sec + seq2[i2+1:j2]
-      score += currscore + int(tmp[1])
-      
-      seq1, seq2 = seq1[j1+1:], seq2[j2+1:]
-      
-      if isLogging and (len(seq1) > 0 or len(seq2) > 0):
-        log.write('REMAINING : \n ' + seq1 + ' \n ' + seq2 + '\n')
+    i1 = seq1.find('[') 
+    i2 = seq2.find('[')
+    j1 = seq1.find(']') 
+    j2 = seq2.find(']')
+    
+    if len(seq1[:i1]) > 0 or len(seq2[:i2]) > 0:
+      first, sec, currscore = align(seq1[:i1], seq2[:i2])
+    else:
+      first, sec, currscore = '', '', 0
+    
+    tmp = seq1[i1+1:j1].split("#")
+    
+    res1 += first + tmp[0]
+    res2 += sec + seq2[i2+1:j2]
+    score += currscore + int(tmp[1])
+    
+    seq1, seq2 = seq1[j1+1:], seq2[j2+1:]
+    
+    if isLogging and (len(seq1) > 0 or len(seq2) > 0):
+      log.write('REMAINING : \n ' + seq1 + ' \n ' + seq2 + '\n')
   
   if len(seq1) > 0 or len(seq2) > 0:
     first, sec, currscore = align(seq1, seq2)
