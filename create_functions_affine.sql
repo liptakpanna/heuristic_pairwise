@@ -478,7 +478,7 @@ except Exception as e:
   return 'ERROR see log'
 };
 
-create or replace function use_lookup_affine(id1 integer, id2 integer, score_match integer, score_mismatch integer, score_gap_open integer, score_gap_extend integer,)
+create or replace function use_lookup_affine(id1 integer, id2 integer, score_match integer, score_mismatch integer, score_gap_open integer, score_gap_extend integer)
 returns text
 begin
   declare result text, seq1 text, seq2 text;
