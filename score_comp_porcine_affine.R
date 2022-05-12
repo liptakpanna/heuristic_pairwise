@@ -1,6 +1,7 @@
 library(tidyverse)
 library(DBI)
 library(MonetDB.R)
+library(dplyr)
 
 con <- dbConnect(MonetDB.R(), 
                  host="localhost", 
@@ -101,8 +102,6 @@ measure_used_score_affine <- function(felsohatar, score_match, score_mismatch, s
   return(result)
 }
 
-library(dplyr)
-
 measure_overall_used_affine <- function(count, limit, k, sample_size,  upperlimit, 
                                         score_match, score_mismatch, score_gap_open, score_gap_extend,
                                         isLog=FALSE, div=100) {
@@ -141,7 +140,8 @@ measure_overall_used_affine <- function(count, limit, k, sample_size,  upperlimi
                        t1=c(result$time_lookup),
                        l_time=c(result$time_lookup/result$used),
                        t2=c(result$time_needle),
-                       n_time=c(result$time_needle/result$used)
+                       n_time=c(result$time_needle/result$used),
+                       pretime=c(t)
       )
       df <- df %>% 
         mutate(across(where(is.numeric), round, 3))
@@ -157,9 +157,11 @@ measure_overall_used_affine <- function(count, limit, k, sample_size,  upperlimi
   print(paste("ATLAG négyzetes eltérés: ", avgscore/count))
   print(paste("ATLAG EGYEZESEK szama", identical/count))
   print(paste("ATLAG OSSZ LOOKUP TIME: ", sumtime_lookup/count))
+  print(paste("ATLAG 1 LOOKUP TIME: ", sumtime_lookup / sumused ))
   print(paste("ATLAG OSSZ NEEDLE TIME: ", sumtime_needle/count))
+  print(paste("ATLAG 1 NEEDLE TIME: ", sumtime_needle / sumused ))
   print(paste("ATLAG USED LOOKUP: ", sumused/count))
-  print(paste("ATLAG LOOKUP TIME: ", t/count))
+  print(paste("ATLAG TIME LOOKUP: ", t/count))
 }
 
 also <- 1
@@ -171,4 +173,4 @@ score_mismatch <- -1
 score_gap_open <- -3
 score_gap_extend <- -1
 
-measure_overall_used_affine(1, length(x[1,]), 300, 5, db, score_match, score_mismatch, score_gap_open, score_gap_extend, TRUE)
+measure_overall_used_affine(3, length(x[1,]), 300, 5, db, score_match, score_mismatch, score_gap_open, score_gap_extend, TRUE)
