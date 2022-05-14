@@ -129,7 +129,7 @@ measure_overall_used <- function(count, limit, k, sample_size,  upperlimit,
     end <- proc.time()
     print((end-start)[["elapsed"]])
     t = t + (end-start)[["elapsed"]]
-    '''
+
     result <- measure_used_score(limit, score_match, score_mismatch, score_gap)
     avgscore = avgscore + result$avg
     identical = identical + result$identical
@@ -160,17 +160,16 @@ measure_overall_used <- function(count, limit, k, sample_size,  upperlimit,
                    row.names=F, 
                    col.names=F )
     }
-    '''
   }
-  '''
-  print("===================================================")
-  print(paste("ATLAG négyzetes eltérés: ", avgscore/count))
-  print(paste("ATLAG EGYEZESEK szama", identical/count))
-  print(paste("ATLAG OSSZ LOOKUP TIME: ", sumtime_lookup/count))
-  print(paste("ATLAG OSSZ NEEDLE TIME: ", sumtime_needle/count))
-  print(paste("ATLAG USED LOOKUP: ", sumused/count))
-  print(paste("ATLAG LOOKUP TIME: ", t/count))
-  '''
+  if(FALSE){
+    print("===================================================")
+    print(paste("ATLAG négyzetes eltérés: ", avgscore/count))
+    print(paste("ATLAG EGYEZESEK szama", identical/count))
+    print(paste("ATLAG OSSZ LOOKUP TIME: ", sumtime_lookup/count))
+    print(paste("ATLAG OSSZ NEEDLE TIME: ", sumtime_needle/count))
+    print(paste("ATLAG USED LOOKUP: ", sumused/count))
+    print(paste("ATLAG LOOKUP TIME: ", t/count))
+  }
   print(t/count)
 }
 
@@ -183,4 +182,4 @@ score_match <- 1
 score_mismatch <- -1
 score_gap <- -2
 
-measure_overall_used(5, length(x[1,]), 300, 5, db, score_match, score_mismatch, score_gap, 1, TRUE)
+measure_overall_used(5, length(x[1,]), 300, 5, db, score_match, score_mismatch, score_gap, 1, FALSE)
