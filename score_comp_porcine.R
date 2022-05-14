@@ -127,8 +127,9 @@ measure_overall_used <- function(count, limit, k, sample_size,  upperlimit,
                             , k, ',', sample_size,',', upperlimit, ");"))
 
     end <- proc.time()
+    print((end-start)[["elapsed"]])
     t = t + (end-start)[["elapsed"]]
-    
+    '''
     result <- measure_used_score(limit, score_match, score_mismatch, score_gap)
     avgscore = avgscore + result$avg
     identical = identical + result$identical
@@ -147,7 +148,8 @@ measure_overall_used <- function(count, limit, k, sample_size,  upperlimit,
                        t1=c(result$time_lookup),
                        l_time=c(result$time_lookup/result$used),
                        t2=c(result$time_needle),
-                       n_time=c(result$time_needle/result$used)
+                       n_time=c(result$time_needle/result$used),
+                       pretime=c(t)
                       )
       df <- df %>% 
         mutate(across(where(is.numeric), round, 3))
@@ -157,8 +159,10 @@ measure_overall_used <- function(count, limit, k, sample_size,  upperlimit,
                    sep=',', 
                    row.names=F, 
                    col.names=F )
+    '''
     }
   }
+  '''
   print("===================================================")
   print(paste("ATLAG négyzetes eltérés: ", avgscore/count))
   print(paste("ATLAG EGYEZESEK szama", identical/count))
@@ -166,6 +170,8 @@ measure_overall_used <- function(count, limit, k, sample_size,  upperlimit,
   print(paste("ATLAG OSSZ NEEDLE TIME: ", sumtime_needle/count))
   print(paste("ATLAG USED LOOKUP: ", sumused/count))
   print(paste("ATLAG LOOKUP TIME: ", t/count))
+  '''
+  print(t/count)
 }
 
 also <- 1
@@ -177,4 +183,4 @@ score_match <- 1
 score_mismatch <- -1
 score_gap <- -2
 
-measure_overall_used(1, length(x[1,]), 300, 5, db, score_match, score_mismatch, score_gap, 1, TRUE)
+measure_overall_used(5, length(x[1,]), 300, 5, db, score_match, score_mismatch, score_gap, 1, TRUE)
