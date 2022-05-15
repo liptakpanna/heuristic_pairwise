@@ -1,0 +1,14 @@
+# rose sample 4
+
+%include dna-defaults
+
+SequenceLen = 100
+SequenceNum = 200
+Relatedness = 100
+ChooseFromLeaves = False
+
+TheInsertThreshold = 0.00005
+TheDeleteThreshold = 0.00005
+
+TheInsFunc = [.2,.3,.4,.4,.3,.2,.1]
+TheDelFunc = [.2,.3,.4,.4,.3,.2,.1]

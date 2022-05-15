@@ -1,0 +1,18 @@
+#
+# default rose include file for DNA
+#
+
+InputType = 4 // DNA
+TheAlphabet = "ACGT"
+TheFreq = [.25,.25,.25,.25]
+
+TheInsertThreshold = 0.05
+TheDeleteThreshold = 0.05
+
+TheInsFunc = [.2,.2,.2,.1,.1,.1,.1]
+TheDelFunc = [.2,.2,.2,.1,.1,.1,.1]
+
+TheDNAmodel = "JC"
+MeanSubstitution = 0.01342302 // 1 percent mutations for t=1
+TransitionBias = 1.0 // reduces K2P to JC
+TTratio = 0.0 // reduces F84 to JC
