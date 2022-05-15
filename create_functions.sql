@@ -408,7 +408,7 @@ except Exception as e:
   return 'ERROR see log'
 };
 
-CREATE OR REPLACE FUNCTION seq_sample(samplesize integer, upperlimit integer)
+CREATE OR REPLACE FUNCTION get_sample_seq(samplesize integer, upperlimit integer)
 RETURNS TABLE(id integer, seq text)
 language python {
      query = 'select id, seq from seq_data where id <=' + str(upperlimit) + ' sample ' + str(samplesize) + ';'
@@ -423,7 +423,7 @@ begin
   truncate table lookup CASCADE;
   truncate table sample_seq;
   
-  insert into sample_seq (SELECT * FROM seq_sample(samplesize, upperlimit));
+  insert into sample_seq (SELECT * FROM get_sample_seq(samplesize, upperlimit));
   
   insert into lookup(align1, align2, score)
   select * from create_lookup((select align1, align2, score_match, score_mismatch, score_gap, ceil(k/2), k 

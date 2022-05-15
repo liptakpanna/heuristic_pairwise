@@ -261,7 +261,7 @@ begin
   truncate table lookup CASCADE;
   truncate table sample_seq;
   
-  insert into sample_seq (SELECT * FROM seq_sample(samplesize, upperlimit));
+  insert into sample_seq (SELECT * FROM get_sample_seq(samplesize, upperlimit));
   
   insert into lookup(align1, align2, score)
   select * from create_lookup((select align1, align2, score_match, score_mismatch, score_gap_open,score_gap_extend, k 
