@@ -427,8 +427,8 @@ begin
   
   insert into lookup(align1, align2, score)
   select * from create_lookup((select align1, align2, score_match, score_mismatch, score_gap, ceil(k/2), k 
-  from needleman((select id, seq, score_match, score_mismatch, score_gap
-  from sample_seq ))));
+  from text_align((select a.seq, b.seq, score_match, score_mismatch, score_gap
+  from sample_seq a cross join sample_seq b where a.id < b.id ))));
 
 
   insert into aligned_subseq(seq) 
